@@ -1,7 +1,7 @@
 #!/bin/bash -eu
 set -o pipefail
 
-NVIDIA_VERSION="367.57"
+. settings.conf
 
 fail() {
 	local message="$1"
@@ -23,8 +23,8 @@ fail() {
 
 mkdir log || fail "Couldn't make log directory"
 
-NVIDIA_FILE="NVIDIA-Linux-x86_64-${NVIDIA_VERSION}.run"
-NVIDIA_URL="https://us.download.nvidia.com/XFree86/Linux-x86_64/$NVIDIA_VERSION/$NVIDIA_FILE"
+NVIDIA_FILE="NVIDIA-Linux-x86_64-${NVIDIA_DRIVER_VERSION}.run"
+NVIDIA_URL="https://us.download.nvidia.com/XFree86/Linux-x86_64/$NVIDIA_DRIVER_VERSION/$NVIDIA_FILE"
 
 # NVIDIA doesn't seem to provide checksums for their drivers. :-( Use what Gentoo thinks is right (better than nothing).
 NVIDIA_SHA256_URL="https://gitweb.gentoo.org/repo/gentoo.git/plain/x11-drivers/nvidia-drivers/Manifest"
