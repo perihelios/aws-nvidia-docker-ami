@@ -1,0 +1,114 @@
+{
+	"Parameters": {
+		"VpcCidrBlock": {
+			"Type": "String",
+			"AllowedPattern": "[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}/[0-9]{1,2}"
+		},
+		"SshIngressIpAddress": {
+			"Type": "String",
+			"AllowedPattern": "[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}"
+		},
+		"Ami": {
+			"Type": "String",
+			"AllowedPattern": "ami-[0-9a-f]+"
+		},
+		"KeyPairName": {
+			"Type": "String"
+		}
+	},
+
+    "Resources": {
+        "Vpc": {
+            "Type": "AWS::EC2::VPC",
+            "Properties": {
+                "CidrBlock": { "Ref": "VpcCidrBlock" }
+            }
+        },
+
+        "InternetGateway": {
+            "Type": "AWS::EC2::InternetGateway"
+        },
+
+        "VpcGatewayAttachment": {
+            "Type": "AWS::EC2::VPCGatewayAttachment",
+            "Properties": {
+                "InternetGatewayId": { "Ref": "InternetGateway" },
+                "VpcId": { "Ref": "Vpc" }
+            }
+        },
+
+        "RouteTable": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": { "Ref": "Vpc" }
+            }
+        },
+
+        "InternetRoute": {
+            "Type": "AWS::EC2::Route",
+            "Properties": {
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "GatewayId": { "Ref": "InternetGateway" },
+                "RouteTableId": { "Ref": "RouteTable" }
+            }
+        },
+
+        "Subnet": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "CidrBlock": { "Ref": "VpcCidrBlock" },
+                "MapPublicIpOnLaunch": true,
+                "VpcId": { "Ref": "Vpc" }
+            }
+        },
+
+        "SubnetRouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "RouteTableId": { "Ref": "RouteTable" },
+                "SubnetId": { "Ref": "Subnet" }
+            }
+        },
+
+        "SecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Allow inbound SSH connections from single IP address",
+                "SecurityGroupIngress": [{
+                    "CidrIp": { "Fn::Join": ["", [ { "Ref" : "SshIngressIpAddress" }, "/32" ] ] },
+                    "IpProtocol": "tcp",
+                    "FromPort": 22,
+                    "ToPort": 22
+                }],
+                "VpcId": { "Ref": "Vpc" }
+            }
+        },
+
+		"Instance": {
+			"Type": "AWS::EC2::Instance",
+			"Properties": {
+				"ImageId": { "Ref": "Ami" },
+				"InstanceType": "g2.2xlarge",
+				"KeyName": { "Ref": "KeyPairName" },
+				"SecurityGroupIds": [ { "Ref": "SecurityGroup" } ],
+				"SubnetId": { "Ref": "Subnet" },
+				"Tags": [{
+					"Key": "Name",
+					"Value": { "Ref": "KeyPairName" }
+				}]
+			}
+		}
+    },
+
+	"Outputs": {
+		"VpcId": {
+			"Value": { "Ref": "Vpc" }
+		},
+		"SubnetId": {
+			"Value": { "Ref": "Subnet" }
+		},
+		"InstanceIpAddress": {
+			"Value": { "Fn::GetAtt": [ "Instance", "PublicIp" ] }
+		}
+	}
+}
