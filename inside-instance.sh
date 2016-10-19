@@ -30,7 +30,6 @@ apt-key adv --keyserver keyserver.ubuntu.com --recv-keys "$DOCKER_GPG_KEY_ID" >"
 echo "deb https://apt.dockerproject.org/repo ubuntu-$UBUNTU_CODENAME main" >/etc/apt/sources.list.d/docker.list ||
 	fail "Failed to add Docker repo to Apt"
 apt-get update >"log/apt-get-update.log" 2>&1 || fail "Failed to run apt-get update" "log/apt-get-update.log"
-apt-get -y upgrade >"log/apt-get-upgrade.log" 2>&1 || fail "Failed to run apt-get upgrade" "log/apt-get-upgrade.log"
 apt-get -y install \
 	build-essential \
 	"linux-headers-$KERNEL_VERSION" \
