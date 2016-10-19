@@ -3,6 +3,9 @@ set -o pipefail
 
 . settings.conf
 
+# Note: AWS region *MUST* be us-east-1 to publish AMI to Marketplace!
+AWS_REGION=us-east-1
+
 fail() {
 	local message="$1"
 	local logFile=""
@@ -25,8 +28,17 @@ randomHex() {
 	dd if=/dev/urandom bs=1 count=4 2>/dev/null | od -t x4 -A n | sed 's/ //g'
 }
 
-# Note: AWS region *MUST* be us-east-1 to publish AMI to Marketplace!
-AWS_REGION=us-east-1
+cleanup() {
+	if [ -n "$KEY_NAME" ]; then
+		aws --region "$AWS_REGION" ec2 delete-key-pair --key-name "$KEY_NAME" >/dev/null >&2 || true
+	fi
+
+#	if [ -n "$CF_STACK_NAME" ]; then
+#		aws --region "$AWS_REGION" cloudformation delete-stack --stack-name "$CF_STACK_NAME" >/dev/null >&2 || true
+#	fi
+}
+
+trap cleanup EXIT
 
 mkdir temp || fail "Failed to create temp directory"
 
@@ -37,13 +49,15 @@ if [[ ! "$MY_IP_ADDRESS" =~ [0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3} ]]; t
 	fail "Bad external IP address obtained for your computer: $MY_IP_ADDRESS"
 fi
 
-CF_STACK_NAME="nvidia-docker-ami-builder-$(randomHex)"
+RANDOM_HEX=$(randomHex)
+CF_STACK_NAME="nvidia-docker-ami-builder-$RANDOM_HEX"
+KEY_NAME="$CF_STACK_NAME"
 
 ssh-keygen -t rsa -b 2048 -f "temp/key" -N '' -C ubuntu >"temp/ssh-keygen.log" 2>&1 ||
 	fail "Failed to generate SSH key" "temp/ssh-keygen.log"
 
 aws --region "$AWS_REGION" --output json ec2 import-key-pair \
-	--key-name "$CF_STACK_NAME" \
+	--key-name "$KEY_NAME" \
 	--public-key-material "$(cat temp/key.pub)" \
 	>"temp/aws-import-key-pair.log" 2>&1 || fail "Failed to import SSH public key to AWS" "temp/aws-import-key-pair.log"
 
