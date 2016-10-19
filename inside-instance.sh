@@ -96,6 +96,3 @@ dpkg -i nvidia-docker.deb >"log/nvidia-docker-install.log" ||
 
 rm nvidia-docker.deb >"log/rm-deb.log" 2>&1 || fail "Failed to remove nvidia-docker package file" "log/rm-deb.log"
 
-ln -s /usr/bin/nvidia-docker /usr/local/bin/docker >"log/ln-docker.log" 2>&1 ||
-	fail "Failed to create symlink to nvidia-docker" "log/ln-docker.log"
-
